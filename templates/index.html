@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Донат для Minecraft</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .form-container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Донат для Minecraft сервера</h1>
+        <p>Введите ваш ник и сумму:</p>
+
+        <input type="text" id="nickname" placeholder="Ваш ник в Minecraft" required>
+        <input type="number" id="amount" placeholder="Сумма (USD)" min="1" required>
+        <button id="donate-btn">Поддержать</button>
+    </div>
+
+    <!-- Подключаем Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripe = Stripe("{{ stripe_public_key }}");  # Ключ из Flask
+
+        document.getElementById("donate-btn").addEventListener("click", async () => {
+            const nickname = document.getElementById("nickname").value;
+            const amount = document.getElementById("amount").value;
+
+            if (!nickname || !amount) {
+                alert("Введите ник и сумму!");
+                return;
+            }
+
+            // Отправляем запрос на Flask-сервер
+            const response = await fetch("/create-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nickname, amount }),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                alert("Ошибка: " + data.error);
+                return;
+            }
+
+            // Перенаправляем на Stripe Checkout
+            await stripe.redirectToCheckout({ sessionId: data.id });
+        });
+    </script>
+</body>
+</html>
